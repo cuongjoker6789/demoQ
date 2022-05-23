@@ -114,26 +114,47 @@ public class OrderService {
         Root<Order> order = query.from(Order.class);
         List<Expression<?>> expressions = new ArrayList<>();
 
-        expressions.add(cb.count(order.get(Order_.ID)));
-        expressions.add(cb.count(order.get(Order_.ID)));
-        expressions.add(cb.count(order.get(Order_.ID)));
+        expressions.add(cb.sumAsLong(
+                cb.<Integer>selectCase().when(cb.equal(order.get(Order_.PAYMENT_TYPE), 0), order.get(Order_.AMOUNT))
+                        .otherwise(0)
+        ));
 
-        query.multiselect(expressions.toArray(new Expression[0]));
+        expressions.add(cb.sumAsLong(
+                cb.<Integer>selectCase().when(cb.equal(order.get(Order_.PAYMENT_TYPE), 1), order.get(Order_.AMOUNT))
+                        .otherwise(0)
+        ));
+
+
+
+        expressions.add(cb.sumAsLong(
+                cb.<Integer>selectCase().when(cb.equal(order.get(Order_.PAYMENT_TYPE), 3), order.get(Order_.AMOUNT))
+                        .otherwise(0)
+        ));
+
+//        expressions.add(cb.count(
+//                cb.selectCase().when(cb.equal(order.get(Order_.PAYMENT_TYPE), 3),0).otherwise(0)
+//                )
+//
+//        );
+
+        List<Expression<?>> groupByExp = new ArrayList<>();
+
+        groupByExp.add(order.get(Order_.PAYMENT_TYPE));
+
+        query.multiselect(expressions.toArray(new Expression[0]))
+                .groupBy(groupByExp.toArray(new Expression[0]));
+
         List<Tuple> results = entityManager.createQuery(query).getResultList();
         results.stream().forEach(n -> {
 
             System.out.println(n.get(0));
+
             System.out.println(n.get(1));
             System.out.println(n.get(2));
 
         });
 
-//        for ( Tuple tuple : results ) {
-//            Long cash = (Long) tuple.get(0);
-//            Long atm = (Long) tuple.get(1);
-//            Long momo = (Long) tuple.get(2);
-//        }
-//        assertEquals(2, results.size());
+
         return results;
 
     }
@@ -143,7 +164,7 @@ public class OrderService {
 //        report.setCash();
 //        report.setAtm();
 //        report.setMomo();
-        return report;
+       return report;
     }
 
 
