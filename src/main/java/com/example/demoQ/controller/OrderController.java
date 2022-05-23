@@ -3,6 +3,7 @@ package com.example.demoQ.controller;
 import com.example.demoQ.entity.Order;
 import com.example.demoQ.model.OrderDTO;
 import com.example.demoQ.model.PageResult;
+import com.example.demoQ.model.Report;
 import com.example.demoQ.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,4 +22,10 @@ public class OrderController {
 
         return orderService.getAll(orderDTO);
     }
+
+    @GetMapping("/totalCash")
+    public Report getTotalCash() {
+        return orderService.getReport();
+    }
+
 }

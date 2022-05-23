@@ -4,6 +4,7 @@ import com.example.demoQ.entity.Order;
 import com.example.demoQ.entity.Order_;
 import com.example.demoQ.model.OrderDTO;
 import com.example.demoQ.model.PageResult;
+import com.example.demoQ.model.Report;
 import com.example.demoQ.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,7 +32,7 @@ public class OrderService {
     public PageResult<Order> getAll(OrderDTO orderDTO) {
         // SELECT * FROM tbl_orders
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Order> query = cb.createQuery(Order.class);
+        CriteriaQuery<String> query = cb.createQuery(String.class);
 
         Root<Order> order = query.from(Order.class);
 
@@ -46,58 +47,68 @@ public class OrderService {
         Optional.ofNullable(orderDTO.getPaymentStatus())
                          .ifPresent(status -> predicates.add(cb.equal(order.get(Order_.PAYMENT_STATUS), status)));
 
-
         query.where(predicates.toArray(new Predicate[0]));
 
-        query.select(order);
-         List<Order> orders =  entityManager.createQuery(query)
-                 .setFirstResult(orderDTO.getPage() * orderDTO.getSize())
-                 .setMaxResults(orderDTO.getSize())
+        query.select(order.get(Order_.ID));
+         List<String> ids =  entityManager.createQuery(query)
                  .getResultList();
 
         PageResult<Order> results = new PageResult<>();
-        results.setData(orders);
-        results.setTotal(100);
+        results.setData(getOrderByIds(ids, orderDTO));
+        results.setTotal(ids.size());
+
+
         return results;
     }
 
-    public List<Order> pagination(Order orderInput){
-        int pageNumber = 1;
-        int pageSize = 10;
+    private List<Order> getOrderByIds(List<String> ids, OrderDTO orderDTO) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Order> query = cb.createQuery(Order.class);
         Root<Order> order = query.from(Order.class);
-        List<Predicate> predicates = new ArrayList<>();
-//        CriteriaQuery<Long> countQuery = criteriaBuilder
-//                .createQuery(Long.class);
-//        countQuery.select(criteriaBuilder
-//                .count(countQuery.from(Order.class)));
-//        Long count = entityManager.createQuery(countQuery)
-//                .getSingleResult();
-//        CriteriaQuery<Order> criteriaQuery = criteriaBuilder
-//                .createQuery(Order.class);
-//        Root<Order> from = criteriaQuery.from(Order.class);
-//        CriteriaQuery<Order> select = criteriaQuery.select(from);
-//
-//        TypedQuery<Order> typedQuery = entityManager.createQuery(select);
-//        while (pageNumber < count.intValue()) {
-//            typedQuery.setFirstResult(pageNumber - 1);
-//            typedQuery.setMaxResults(pageSize);
-//            System.out.println("Current page: " + typedQuery.getResultList());
-//            pageNumber += pageSize;
-//        }
-
-
-
-
-        query.where(predicates.toArray(new Predicate[0]));
-
-        query.select(order);
+        query.where(order.get(Order_.ID).in(ids));
+//        query.multiselect()
+//                TupleQuery
         return entityManager.createQuery(query)
-                .setFirstResult(0)
-                .setMaxResults(10)
+                .setFirstResult(orderDTO.getPage() * orderDTO.getSize())
+                .setMaxResults(orderDTO.getSize())
                 .getResultList();
+    }
 
+
+    public Report getReport() {
+        Report report = new Report();
+        report.setCash(getTotalCash());
+        report.setAtm(getTotalATM());
+        report.setMomo(getTotalMomo());
+        return report;
+    }
+
+    private Long getTotalCash() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> query = cb.createQuery(Long.class);
+        Root<Order> order = query.from(Order.class);
+
+        query.where(cb.equal(order.get(Order_.PAYMENT_TYPE), 0));
+        query.select(cb.count(order));
+        return entityManager.createQuery(query).getSingleResult();
+    }
+
+    private Long getTotalATM() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> query = cb.createQuery(Long.class);
+        Root<Order> order =query.from(Order.class);
+        query.where(cb.equal(order.get(Order_.PAYMENT_TYPE), 1));
+        query.select(cb.count(order));
+        return  entityManager.createQuery(query).getSingleResult();
+    }
+
+    private Long getTotalMomo() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> query = cb.createQuery(Long.class);
+        Root<Order> order = query.from(Order.class);
+        query.where(cb.equal(order.get(Order_.PAYMENT_TYPE), 3));
+        query.select(cb.count(order));
+        return entityManager.createQuery(query).getSingleResult();
     }
 
 
