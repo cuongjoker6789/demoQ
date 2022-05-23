@@ -11,11 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -109,6 +107,43 @@ public class OrderService {
         query.where(cb.equal(order.get(Order_.PAYMENT_TYPE), 3));
         query.select(cb.count(order));
         return entityManager.createQuery(query).getSingleResult();
+    }
+    public List<Tuple> getNumberTotal(){
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Tuple> query = cb.createTupleQuery();
+        Root<Order> order = query.from(Order.class);
+        List<Expression<?>> expressions = new ArrayList<>();
+
+        expressions.add(cb.count(order.get(Order_.ID)));
+        expressions.add(cb.count(order.get(Order_.ID)));
+        expressions.add(cb.count(order.get(Order_.ID)));
+
+        query.multiselect(expressions.toArray(new Expression[0]));
+        List<Tuple> results = entityManager.createQuery(query).getResultList();
+        results.stream().forEach(n -> {
+
+            System.out.println(n.get(0));
+            System.out.println(n.get(1));
+            System.out.println(n.get(2));
+
+        });
+
+//        for ( Tuple tuple : results ) {
+//            Long cash = (Long) tuple.get(0);
+//            Long atm = (Long) tuple.get(1);
+//            Long momo = (Long) tuple.get(2);
+//        }
+//        assertEquals(2, results.size());
+        return results;
+
+    }
+    public Report getTotalReport() {
+        Report report = new Report();
+
+//        report.setCash();
+//        report.setAtm();
+//        report.setMomo();
+        return report;
     }
 
 
